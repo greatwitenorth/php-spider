@@ -9,17 +9,16 @@ use VDB\Uri\UriInterface;
 /**
  * @author matthijs
  */
-class RestrictToBaseUriFilter implements PreFetchFilter
+class RestrictExtensions implements PreFetchFilter
 {
-    /** @var Uri */
-    private $seed;
+    private $ext = array();
 
     /**
-     * @param string $seed
+     * @param array $ext
      */
-    public function __construct($seed)
+    public function __construct($ext)
     {
-        $this->seed = new Http($seed);
+        $this->ext = array_map('strtolower', $ext);
     }
 
     public function match(FilterableUri $uri)
@@ -27,8 +26,10 @@ class RestrictToBaseUriFilter implements PreFetchFilter
         /*
          * if the URI does not contain the seed, it is not allowed
          */
-        if ($uri->getHost() != $this->seed->getHost()) {
-            $uri->setFiltered(true, 'Doesn\'t match base URI');
+        $ext = pathinfo(parse_url($uri->toString(),PHP_URL_PATH),PATHINFO_EXTENSION);
+
+        if (in_array(strtolower($ext), $this->ext)) {
+            $uri->setFiltered(true, 'On restricted extension list');
             return true;
         }
 

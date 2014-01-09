@@ -46,7 +46,11 @@ class GuzzleRequestHandler implements RequestHandler
      */
     public function request(UriInterface $uri)
     {
-        $response = $this->getClient()->createRequest(RequestInterface::GET, $uri->toString())->send();
+        $request = $this->getClient()->createRequest(RequestInterface::GET, $uri->toString());
+        $request->getCurlOptions()->set(CURLOPT_CONNECTTIMEOUT, 20);
+        $request->getCurlOptions()->set(CURLOPT_TIMEOUT, 20);
+
+        $response = $request->send();
         return new Resource($uri, $response);
     }
 }

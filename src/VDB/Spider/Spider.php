@@ -80,12 +80,17 @@ class Spider
     /** @var string the unique id of this spider instance */
     private $spiderId;
 
+    /** @var int The time in seconds since unix epoch that this crawler started */
+    protected $startTime;
+
     /**
      * @param string $seed the URI to start crawling
      * @param string $spiderId
      */
-    public function __construct($seed, $spiderId = null)
+    public function __construct($seed, $spiderId = null, $model)
     {
+        $this->startTime = time();
+
         $this->setSeed($seed);
         if (null !== $spiderId) {
             $this->spiderId = $spiderId;
@@ -93,12 +98,16 @@ class Spider
             $this->spiderId = md5($seed . microtime(true));
         }
 
+        $this->model = $model;
+
         // This makes the spider handle signals gracefully and allows us to do cleanup
-        declare(ticks = 1);
-        pcntl_signal(SIGTERM, array($this, 'handleSignal'));
-        pcntl_signal(SIGINT, array($this, 'handleSignal'));
-        pcntl_signal(SIGHUP, array($this, 'handleSignal'));
-        pcntl_signal(SIGQUIT, array($this, 'handleSignal'));
+        if(php_sapi_name() == 'cli'){
+            declare(ticks = 1);
+            pcntl_signal(SIGTERM, array($this, 'handleSignal'));
+            pcntl_signal(SIGINT, array($this, 'handleSignal'));
+            pcntl_signal(SIGHUP, array($this, 'handleSignal'));
+            pcntl_signal(SIGQUIT, array($this, 'handleSignal'));
+        }
     }
 
     /**
@@ -275,6 +284,11 @@ class Spider
         return $this->statsHandler;
     }
 
+    public function getStartTime()
+    {
+        return $this->startTime;
+    }
+
     public function handleSignal($signal)
     {
         switch ($signal) {
@@ -347,6 +361,7 @@ class Spider
     private function doCrawl()
     {
         while (count($this->traversalQueue)) {
+
             /** @var $currentUri Uri */
             $currentUri = $this->getNextUriFromQueue();
 
